@@ -1,6 +1,7 @@
-const Router = require('koa-router') // 路由
+const Router = require('koa-router')
 const axios = require('axios')
 const Captcha = require('svg-captcha')
+const Time = require('../../../api/methods/time')
 
 const router = new Router()
 
@@ -35,6 +36,7 @@ router.post('/sms', async (ctx,next) => {
     next()
 })
 
+// console.log(Time.futureTime(new Date(new Date(Time.currentTime()).getTime() + 60).getTime()))
 // 图形验证码
 router.get('/captcha', async (ctx, next) => {
     const createCaptcha = Captcha.create({
@@ -48,10 +50,24 @@ router.get('/captcha', async (ctx, next) => {
         color:true,
         background: '#333333'
     })
-    // 保存到session,忽略大小写
     const CaptchaText = createCaptcha.text.toLowerCase()
     const CaptchaImg = createCaptcha.data
-    ctx.type = 'html'
+
+    const now = new Date()
+    const y = now.getFullYear()
+    const m = now.getMonth() + 1
+    const d = now.getDate()
+    const hours = now.getHours()
+    const minutes = now.getMinutes() + 1
+    const second = now.getSeconds()
+    const expires = `${y}-${(m < 0 ? '0' + m : m)}-${(d < 10 ? '0' + d : d)} ${(hours < 10 ? '0' + hours : hours)}:${(minutes < 10 ? '0' + minutes : minutes)}:${(second < 10 ? '0' + second : second)}`
+    console.log(expires, new Date())
+
+    ctx.cookies.set('username','hhh', {
+        expires: new Date(expires),
+        httpOnly: false,  // 是否只用于http请求中获取
+        overwrite: false  // 是否允许重写
+     })
     ctx.body = {
         data: {
             code: 200,
