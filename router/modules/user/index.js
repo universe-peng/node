@@ -1,10 +1,25 @@
-const Router = require('koa-router')
-const axios = require('axios')
-const Captcha = require('svg-captcha')
-const crypto = require('crypto')
+const Router = require('koa-router') /// 路由
+const axios = require('axios') //
+const Captcha = require('svg-captcha') // 图形验证码
+const crypto = require('crypto') // 加密
+const Mysql = require('mysql2')
 
 const router = new Router()
 const Secretkey = 'student'
+
+// mysql2 初始化
+/*
+* mysql2 返回值是数组套数组
+*        第一个数组是数据库记录的值
+*        第二个数组是数据库记录中包含的信息
+* */
+const connection = Mysql.createConnection({
+    host: '127.0.0.1',
+    user: 'root',
+    password: '',
+    database: 'applets'
+})
+
 
 // 短信验证码
 router.post('/sms', async (ctx,next) => {
@@ -71,9 +86,8 @@ router.get('/captcha', async (ctx, next) => {
 
 // 注册账号
 router.post('/logging', async (ctx, next) => {
-    const {validCode} = ctx.request.body
+    const {validCode,cellphone,password} = ctx.request.body
     const encryption = await crypto.createHmac('md5', Secretkey).update(validCode.toLowerCase()).digest('hex')
-    console.log(ctx.cookies.get('captcha') === encryption, ctx.cookies.get('captcha'))
 
     if (!ctx.cookies.get('captcha')) {
         ctx.body = {
@@ -93,7 +107,10 @@ router.post('/logging', async (ctx, next) => {
         }
     }
 
-    if ((ctx.cookies.get('captcha') === encryption)) {
+    if ((ctx.cookies.get('captcha') === encryption) && cellphone && password && cellphone !== '' && password !== '') {
+
+        // 注意：当执行char型号数据时，SQL语句中的values值类型会发生改变
+        connection.query(`insert into user(username,password,phone) values('','${password}','${cellphone}')`)
         ctx.body = {
             data: {
                 code: 200,
