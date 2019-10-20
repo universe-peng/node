@@ -109,16 +109,31 @@ router.post('/logging', async (ctx, next) => {
 
     if ((ctx.cookies.get('captcha') === encryption) && cellphone && password && cellphone !== '' && password !== '') {
 
-        // 注意：当执行char型号数据时，SQL语句中的values值类型会发生改变
-        connection.query(`insert into user(username,password,phone) values('','${password}','${cellphone}')`)
-        ctx.body = {
-            data: {
-                code: 200,
-                message: '注册成功'
-            }
-        }
-    }
+        await connection.promise().query('select phone from user').then(async results => {
+            const [user] = results
+            const Phone = await user.filter(item => item.phone === cellphone)[0]
+            Phone ? ctx.body = {
+                data: {
+                    code: 404,
+                    message: '该手机号码已经注册过了！！！'
+                }
 
+                // 注意：当执行char型号数据时，SQL语句中的values值类型会发生改变
+            } : await connection.promise().query(`insert into user(username,password,phone) values('','${password}','${cellphone}')`)
+                .then(result => {
+                    ctx.body = {
+                        data: {
+                            code: 200,
+                            message: '注册成功'
+                        }
+                    }
+                }).catch(error => {
+                    console.log(error, '插入内容失败=================================')
+                })
+        }).catch(error => {
+            console.log(error, '===================')
+        })
+    }
 })
 
 module.exports = router.routes()
