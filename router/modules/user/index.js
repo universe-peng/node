@@ -88,8 +88,8 @@ router.get('/captcha', async (ctx, next) => {
 router.post('/logging', async (ctx, next) => {
     const {validCode,cellphone,password} = ctx.request.body
     const encryption = await crypto.createHmac('md5', Secretkey).update(validCode.toLowerCase()).digest('hex')
-
-    if (!ctx.cookies.get('captcha')) {
+    if (!validCode||!cellphone||!password) ctx.status = 401
+    if (!ctx.cookies.get('captcha')&&password&&cellphone&&validCode) {
         ctx.body = {
             data: {
                 code: 404,
@@ -98,7 +98,7 @@ router.post('/logging', async (ctx, next) => {
         }
     }
 
-    if (ctx.cookies.get('captcha') && !(ctx.cookies.get('captcha') === encryption)) {
+    if (ctx.cookies.get('captcha') && !(ctx.cookies.get('captcha') === encryption)&&password&&cellphone&&validCode) {
         ctx.body = {
             data: {
                 code: 404,
@@ -127,12 +127,8 @@ router.post('/logging', async (ctx, next) => {
                             message: '注册成功'
                         }
                     }
-                }).catch(error => {
-                    console.log(error, '插入内容失败=================================')
-                })
-        }).catch(error => {
-            console.log(error, '===================')
-        })
+                }).catch(error => {})
+        }).catch(error => {})
     }
 })
 
